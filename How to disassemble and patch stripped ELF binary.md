@@ -260,8 +260,8 @@ In order to analyse and patch any stripped ELF binary you have to perform the fo
 
 - Youtube channel [LiveOverflow](https://www.youtube.com/channel/UClcE-kVhqyiHCcjYwcpfj9w) and especially the video [Finding main() in Stripped Binary - bin 0x2C](https://www.youtube.com/watch?v=N1US3c6CpSw)
 - Very handy resource to assemble/disassemble the code: https://defuse.ca/online-x86-assembler.htm#disassembly
-- PDF: [Intel® 64 and IA-32 Architectures Software Developer’s Manual](file:///home/flores/pets/lowlevel/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf) where you can find description of any instruction (xor or mov for example)
-- [Source code of glibc](git://sourceware.org/git/glibc.git)
+- PDF: [Intel® 64 and IA-32 Architectures Software Developer’s Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf) where you can find description of any instruction (xor or mov for example)
+- [Source code of glibc](https://sourceware.org/git/glibc.git)
 
 
 
