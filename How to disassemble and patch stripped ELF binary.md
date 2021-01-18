@@ -1,18 +1,17 @@
 # How to disassemble and patch stripped ELF binary
 
-Let's take for example a /bin/true binary from Ubuntu 20.04 distro.
+Let's take for example a `/bin/true` binary from `Ubuntu 20.04` distro.
 
-First, ensure it is stripped
+First, ensure it is stripped.
 
 ## Let me see you stripped...
 
 ```
- $ file /bin/true
+$ file /bin/true
 /bin/true: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=be53663829ed7ccdc4a913aa637ff91d280738f5, for GNU/Linux 3.2.0, stripped
 
 ```
-
-See stripped keyword at the end of the output.
+See the stripped keyword at the end of the output.
 
 Another way of getting aware of the absence of symbols in the binary is actually trying to disassemble it like a regular binary with debug info included.
 
@@ -131,7 +130,7 @@ $ objdump -M intel -d -F -j .text /bin/true | grep -A20 2610
 
 These are two identical listing from which we can deduce that the instruction on the line `2638` calls \__libc_start_main function that as the first parameter should receive a pointer to the actual main function of the app.
 
-objdump unlike gdb calculates and shows an actual address that is loaded into `rdi` register in line 2631: `0x2550`. But it is not difficult to calculate it manually. We see the instruction `lea    rdi,[rip+0xffffffffffffff18]` that means add to the contents of the rip register the number `0xffffffffffffff18` and put the content of the memory at the resulting address into rdi register. Let's review it step by step:
+objdump unlike gdb calculates and shows an actual address that is loaded into `rdi` register on the line 2631: `0x2550`. But it is not difficult to calculate it manually. We see the instruction `lea    rdi,[rip+0xffffffffffffff18]` that means add to the contents of the rip register the number `0xffffffffffffff18` and put the content of the memory at the resulting address into rdi register. Let's review it step by step:
 
 1. `rip` by definition contains an address of the next instruction. In our case it is `0x2638`
 2. 0xffffffffffffff18 is negative and represented in complementary code. In order to convert it to the normal view decrement it by one and do binary invert. Putting the things simpler, do the following: 0x18 - 1 = 0x17, 0xFF(255) - 0x17(23) = E8(232). -E8 is the offset of the data relative to the`rip`.
@@ -250,7 +249,7 @@ The task is done.
 
 In order to analyse and patch any stripped ELF binary you have to perform the following steps:
 1. Ensure the file is actually stripped
-2. Find the endtrypoint
+2. Find the entrypoint
 3. Find the main function address
 4. Analyse main(or other) function code and decide what to patch and how
 5. Remember not to add or remove bytes inside the file, bytes should be replaced inline. 2 bytes instruction by 2 bytes instruction, 3,4,n-bytes instruction(s) by instruction(s) occupying the same space.
@@ -259,7 +258,7 @@ In order to analyse and patch any stripped ELF binary you have to perform the fo
 
 ## Links and appreciations
 
-- Youtube channel [Liveroverflow](https://www.youtube.com/channel/UClcE-kVhqyiHCcjYwcpfj9w) and especially the vieo [Finding main() in Stripped Binary - bin 0x2C](https://www.youtube.com/watch?v=N1US3c6CpSw)
+- Youtube channel [LiveOverflow](https://www.youtube.com/channel/UClcE-kVhqyiHCcjYwcpfj9w) and especially the video [Finding main() in Stripped Binary - bin 0x2C](https://www.youtube.com/watch?v=N1US3c6CpSw)
 - Very handy resource to assemble/disassemble the code: https://defuse.ca/online-x86-assembler.htm#disassembly
 - PDF: [Intel® 64 and IA-32 Architectures Software Developer’s Manual](file:///home/flores/pets/lowlevel/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf) where you can find description of any instruction (xor or mov for example)
 - [Source code of glibc](git://sourceware.org/git/glibc.git)
