@@ -1,8 +1,8 @@
 # How to disassemble and patch stripped ELF binary
+## Motivation
+Sometimes, not often, we want to see how the things actually work in computer, and sometimes, even less often, change the way they work. In case of modern linux distributions, e.g. `Ubuntu 20.04`, we have system binaries (such as `ls`, `cat` and others) not containing debug symbols, in other words stripped. When you compile your C file with `gcc`, it is parameter `-s` which is responsible for the presence of such symbols in the output executable. So, in order to debug stripped binaries or patch them you need to do some extra steps.
 
-Let's take for example a `/bin/true` binary from `Ubuntu 20.04` distro.
-
-First, ensure it is stripped.
+Let's consider a very simple but representative file `/bin/true` from `Ubuntu 20.04` distro. First, ensure it is stripped.
 
 ## Let me see you stripped...
 
@@ -11,9 +11,9 @@ $ file /bin/true
 /bin/true: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=be53663829ed7ccdc4a913aa637ff91d280738f5, for GNU/Linux 3.2.0, stripped
 
 ```
-See the stripped keyword at the end of the output.
+You can observe the stripped keyword at the end of the output.
 
-Another way of getting aware of the absence of symbols in the binary is actually trying to disassemble it like a regular binary with debug info included.
+Another way of getting aware of the absence of symbols in the binary is actually trying to disassemble it like a regular executable with debug info included.
 
 ```
 gdb /bin/true
@@ -28,7 +28,7 @@ No symbol table is loaded.  Use the "file" command.
 gdb says it cannot find any debug info built-in into the file. It also hints that we should use the "file" command. OK.
 
 
-## Finding the main
+## Finding the main()
 
 ```
 (gdb) info file
@@ -66,9 +66,9 @@ Local exec file:
 
 ```
 
-Two lines are important here:
-- `Entry point: 0x2610` entry point of the executable file (a wrapper for the main)
-- `0x0000000000002520 - 0x0000000000005562 is .text` (the range of addresses where the instructions reside)
+Two lines are important for us here:
+- `Entry point: 0x2610` entry point of the executable file, a wrapper for the main()
+- `0x0000000000002520 - 0x0000000000005562 is .text` (the range of addresses where the executable instructions reside)
 
 We see that entry point address is within the range of the .text section. Ok. Let's see the actual instructions there:
 
@@ -99,7 +99,7 @@ We see that entry point address is within the range of the .text section. Ok. Le
 
 `x/20i 0x2610` is "Show me 20 first instructions starting from the address 0x2610, the entry point of our app".
 
-Moreover I found a more convenient way with objdump utility:
+Moreover, I found a more convenient way with objdump utility:
 
 ```
 $ objdump -M intel -d -F -j .text /bin/true | grep -A20 2610
@@ -128,19 +128,19 @@ $ objdump -M intel -d -F -j .text /bin/true | grep -A20 2610
 
 ```
 
-These are two identical listing from which we can deduce that the instruction on the line `2638` calls \__libc_start_main function that as the first parameter should receive a pointer to the actual main function of the app.
+These are two identical listings from which we can deduce that the instruction on the line `2638` calls \_\_libc\_start\_main function that as the first parameter should receive a pointer to the actual main function of the app.
 
-objdump unlike gdb calculates and shows an actual address that is loaded into `rdi` register on the line 2631: `0x2550`. But it is not difficult to calculate it manually. We see the instruction `lea    rdi,[rip+0xffffffffffffff18]` that means add to the contents of the rip register the number `0xffffffffffffff18` and put the content of the memory at the resulting address into rdi register. Let's review it step by step:
+objdump unlike gdb calculates and shows an actual address that is loaded into `rdi` register on the line 2631: `0x2550`. But it is not difficult to calculate it manually. We see the instruction `lea rdi,[rip+0xffffffffffffff18]` that means: add to the contents of the `rip` register the number `0xffffffffffffff18` and put the content of the memory at the resulting address into the `rdi` register. Let's review it step by step:
 
 1. `rip` by definition contains an address of the next instruction. In our case it is `0x2638`
-2. 0xffffffffffffff18 is negative and represented in complementary code. In order to convert it to the normal view decrement it by one and do binary invert. Putting the things simpler, do the following: 0x18 - 1 = 0x17, 0xFF(255) - 0x17(23) = E8(232). -E8 is the offset of the data relative to the`rip`.
-3. main's address is 0x2638 - 0xE8 = 0x2550
+2. `0xffffffffffffff18` is a negative number and thus represented in [two's complement form](https://en.wikipedia.org/wiki/Two%27s_complement). In order to convert it to the direct form decrement it by one and do binary invertion. Putting the things simpler, do the following: `0x18 - 1 = 0x17, 0xFF(255) - 0x17(23) = -E8(232)`. `-E8` is the offset of the data relative to the`rip`.
+3. main()'s address is `0x2638 - 0xE8 = 0x2550`
 
-Why have we decided that the address loaded into `rdi` register is the actual main's address? To answer this, I refer to the code of [sysdeps/x86_64/start.S](https://sourceware.org/git/?p=glibc.git;a=blob_plain;f=sysdeps/x86_64/start.S;hb=HEAD) of glibc library. This file contains the source code we have disassembled a few steps earlier. It's single purpose is to prepare arguments and call \__libc_start_main function. The first param is our desired address of the main function.
+Why have we decided that the address loaded into `rdi` register is the actual main()'s address? To answer this, I refer to the code of [sysdeps/x86_64/start.S](https://sourceware.org/git/?p=glibc.git;a=blob_plain;f=sysdeps/x86_64/start.S;hb=HEAD) of glibc library. This file contains the source code we have disassembled a few steps earlier. It's single purpose is to prepare arguments and call \__libc_start_main function. The first param is our desired address of the main function.
 
 ## Patch me if you can
 
-By the moment we have the address of the main `0x2550`. The task is to patch the return value of the main function so that /bin/true returns falsy value to the caller.
+By the moment we have the address of the main(): `0x2550`. The task is to patch it's so that `/bin/true` return "false" to the caller.
 
 Quick check of the original return value:
 ```
@@ -177,9 +177,9 @@ OK. It returns 0, which is interpreted by a shell as a good result code (literal
     25a1: e8 aa 2f 00 00        call   5550 <__ctype_b_loc@plt+0x3040> (File Offset: 0x5550)
 ```
 
-These are the first lines of the main function, it's head. Line `255b` is `ret` which means exit from the function. This is our target. We can see an if-else starting from `cmp    edi,0x2`. One branch leads to return with the code 0 (`xor eax,eax`). This is the branch that is executed when no command line arguments passed to the /bin/true. Another branch is more complex and calls different libc functions along the way. For simplicity we concentrate on the first one.
+These are the first lines of the main function, it's head. Line `255b` is `ret` which means exit from the function. This is our target. We can see an if-else starting from `cmp edi,0x2`. One branch leads to return with the code 0 (`xor eax,eax`). This is the branch that is executed when no command line arguments passed to the `/bin/true`. Another branch is more complex and calls different libc functions along the way. For simplicity we concentrate on the first one.
 
-Our task is that `eax` register contain a value other than 0 just before the ret instruction. `xor    eax,eax` is the instruction which produces the return code. We need to substitute it with another directive of the same size. The binary representation of the `xor    eax,eax` is `31 c0`(see previous column) which are two bytes. Thanks to the resource https://defuse.ca/online-x86-assembler.htm#disassembly you can convert any assembler instruction into binary and vice/versa very simply. Just put some asm expressions, select x64 architecture and press Assemble.
+Our task is that `eax` register contain a value other than 0 just before the `ret` instruction. `xor eax,eax` is the instruction which produces the return code. We need to substitute it with another directive of the same size. The binary representation of the `xor eax,eax` is `31 c0`(see previous column) which is two bytes. Thanks to the resource https://defuse.ca/online-x86-assembler.htm#disassembly you can convert any assembler instruction into binary and vice/versa very simply. Just put some asm expressions, select x64 architecture and press Assemble.
 
 Input:
 ```
