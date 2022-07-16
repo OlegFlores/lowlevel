@@ -13,9 +13,9 @@ CFLAGS = -pedantic \
 		-Wl,-n \
 		-Wl,--gc-sections \
 		-Wl,--build-id=none
-OBJECTS = hello.c hello.S
+OBJECTS = main.c write.c _start.S syscall.S
 
-all: strip
+all: dist/hello
 
 .PHONY strip: dist/hello
 	strip -R .comment ./dist/hello
