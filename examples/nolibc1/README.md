@@ -5,14 +5,14 @@
 $ make
 $ make run
 ```
-Compiled file is is stored in `./dist/hello`
+Compiled file is is stored in `./nolibc1`
 
 ## See disassembled code
 
 ```shell
-$ objdump -d ./dist/hello
+$ objdump -d ./nolibc1
 
-./dist/hello:     file format elf64-x86-64
+./nolibc1:     file format elf64-x86-64
 architecture: i386:x86-64, flags 0x00000102:
 EXEC_P, D_PAGED
 start address 0x00000000004000ef
@@ -61,10 +61,10 @@ Disassembly of section .text:
 ## See file sections
 
 ```shell
-$ objdump -x ./dist/hello
+$ objdump -x ./nolibc1
 
-./dist/hello:     file format elf64-x86-64
-./dist/hello
+./nolibc1:     file format elf64-x86-64
+./nolibc1
 architecture: i386:x86-64, flags 0x00000102:
 EXEC_P, D_PAGED
 start address 0x00000000004000ef
@@ -93,9 +93,9 @@ no symbols
 ## See file section content
 
 ```shell
-objdump -s -j .text -j .comment -j .rodata ./dist/hello
+objdump -s -j .text -j .comment -j .rodata ./nolibc1
 
-./dist/hello:     file format elf64-x86-64
+./nolibc1:     file format elf64-x86-64
 
 Contents of section .text:
  4000b0 f30f1efa 50ba0600 0000bf01 00000048  ....P..........H
@@ -117,7 +117,7 @@ Contents of section .comment:
 ## Display hex content of the file
 
 ```shell
-$ xxd ./dist/hello
+$ xxd ./nolibc1
 00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............
 00000010: 0200 3e00 0100 0000 ef00 4000 0000 0000  ..>.......@.....
 00000020: 4000 0000 0000 0000 7801 0000 0000 0000  @.......x.......
@@ -168,12 +168,12 @@ $ xxd ./dist/hello
 ## Remove a section from file
 
 ```shell
-$ ls -al ./dist/hello
--rwxrwxr-x 1 user user 696 jul 16 01:30 ./dist/hello
+$ ls -al ./nolibc1
+-rwxrwxr-x 1 user user 696 jul 16 01:30 ./nolibc1
 
-$ objcopy --remove-section .comment ./dist/hello
+$ objcopy --remove-section .comment ./nolibc1
 
-$ xxd ./dist/hello
+$ xxd ./nolibc1
 00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............
 00000010: 0200 3e00 0100 0000 ef00 4000 0000 0000  ..>.......@.....
 00000020: 4000 0000 0000 0000 4801 0000 0000 0000  @.......H.......
@@ -216,8 +216,8 @@ $ xxd ./dist/hello
 ## Analyze file sections size
 
 ```shell
-$ size -A -d ./dist/hello 
-./dist/hello  :
+$ size -A -d ./nolibc1 
+./nolibc1  :
 section   size      addr
 .text      113   4194480
 .rodata      7   4194593
