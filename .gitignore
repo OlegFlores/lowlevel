@@ -1,3 +1,5 @@
-/examples/nolibc1/dist/*
+/examples/nolibc1/.build
+/examples/nolibc1/.dep
+/examples/nolibc1/nolibc1
 .vscode
 .idea
