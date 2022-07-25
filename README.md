@@ -18,7 +18,8 @@ Interesting files to check:
 gcc and ld arguments (taken from `man`).
 - its own [README.md](examples/nolibc1/README.md) with examples of linux command to analyse executable file content
 
-Used many articles, among them:
+Used many articles / manuals, among them:
+- https://raw.githubusercontent.com/wiki/hjl-tools/x86-psABI/x86-64-psABI-1.0.pdf
 - http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
 - https://lwn.net/Articles/631631/
 - https://www.embecosm.com/appnotes/ean9/html/ch05s02.html
