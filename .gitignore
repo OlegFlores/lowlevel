@@ -3,3 +3,4 @@
 /examples/nolibc1/nolibc1
 .vscode
 .idea
+build/
