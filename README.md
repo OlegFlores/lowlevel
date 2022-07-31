@@ -28,12 +28,21 @@ Used many articles / manuals, among them:
 
 
 ### Write unit tests for nolibc1 program
+Source code: [nolibc1-units](./examples/nolibc1-units)
 
-Objective:
+#### Objective
 - update nolibc1 project: add makefile target to run unit tests
 - try to mock syscall (write), there should be no output from the program, 
 and the call to write should be asserted in unit test
 - try to find a way to unit test assembler code
+
+#### Result
+- Switched to CMake to make the build fancier and to be able to download external library during the build
+- Created CMakeLists.txt file with the steps and used `FetchContent` plugin to load `Catch2` lib(for testing)
+- Wrote a very very simple test file [test.spec.cpp](./examples/nolibc1-units/tests/test.spec.cpp)
+- Mocked `syscall5` assembly function to unit test write function. Mock file is a regular C file which will be linked to the built test executable
+- README.md contains instructions on how to build, run and test
+- Testing assembly code seems too time consuming, I didn't find an extensively used technique to do so. Maybe I'll return to it in future tasks.
 
 ### Make a program to parse ELF files
 
