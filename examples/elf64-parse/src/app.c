@@ -1,10 +1,9 @@
 #include <stdio.h> 
 #include <elf.h> 
 #include <string.h>
-#include <glib.h>
+#include <inttypes.h>
 #include "app.h"
-
-const char MAGIC_ELF[MAGIC_ELF_LENGTH] = { 0x7f, 'E', 'L', 'F' };
+#include "mappings/mappings.h"
 
 /**
  * 
@@ -19,6 +18,7 @@ const char MAGIC_ELF[MAGIC_ELF_LENGTH] = { 0x7f, 'E', 'L', 'F' };
   Machine:                           Advanced Micro Devices X86-64
   Version:                           0x1
   Entry point address:               0x1960
+
   Start of program headers:          64 (bytes into file)
   Start of section headers:          25008 (bytes into file)
   Flags:                             0x0
@@ -41,6 +41,9 @@ void print_elf_info(elf64_info* info) {
     printf("ABI Version:\t\t\t%s\n", info -> abi_version);
     printf("Padding:\t\t\t%s\n", info -> padding_bytes);
     printf("Type:\t\t\t\t%s\n", info -> object_file_type);
+    printf("Machine:\t\t\t%s\n", info -> machine);
+    printf("Version:\t\t\t%s\n", info -> elf_version);
+    printf("Entry point address:\t\t%s\n", info -> entry_point_address);
 }
 
 int args_have_errors(int argc, char **argv) {
@@ -52,96 +55,14 @@ int args_have_errors(int argc, char **argv) {
 }
 
 int read_elf_header(FILE* fd, Elf64_Ehdr* elf_header) {
+    const char MAGIC_ELF_BYTES[] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
     size_t read_bytes = fread(elf_header, sizeof(char), sizeof(Elf64_Ehdr), fd); 
     printf("Bytes read from file: %ld\n", read_bytes);
     printf("elf_header size is: %ld\n", sizeof(Elf64_Ehdr));
-    if (strncmp(MAGIC_ELF, elf_header->e_ident, MAGIC_ELF_LENGTH) != 0) {
+    if (strncmp(MAGIC_ELF_BYTES, elf_header->e_ident, MAGIC_ELF_LENGTH) != 0) {
         return 1;
     }
     return 0;    
-}
-
-char* map_osabi_desc(unsigned char osabi_id) {
-    switch(osabi_id) {
-        case 0x00: return "UNIX - System V";
-        case 0x01: return "HP-UX";
-        case 0x02: return "NetBSD";
-        case 0x03: return "Linux";
-        case 0x04: return "GNU Hurd";
-        case 0x06: return "Solaris";
-        case 0x07: return "AIX (Monterey)";
-        case 0x08: return "IRIX";
-        case 0x09: return "FreeBSD";
-        case 0x0A: return "Tru64";
-        case 0x0B: return "Novell Modesto";
-        case 0x0C: return "OpenBSD";
-        case 0x0D: return "OpenVMS";
-        case 0x0E: return "NonStop Kernel";
-        case 0x0F: return "AROS";
-        case 0x10: return "FenixOS";
-        case 0x11: return "Nuxi CloudABI";
-        case 0x12: return "Stratus Technologies OpenVOS";
-    }
-    return "N/A";
-}
-
-char* map_object_file_type_desc(Elf64_Half object_file_type_id) {
-    switch(object_file_type_id) {
-        case ET_NONE: return "NONE (Unknown)";
-        case ET_REL: return "REL (Relocatable file)";
-        case ET_EXEC: return "EXEC (Executable file)";
-        case ET_DYN: return "DYN (Position-Independent Executable file)";
-        case ET_CORE: return "Core (Core file)";
-        default: return "Reserved inclusive range";
-    }
-    return "N/A";
-}
-
-char* map_class_desc(unsigned char class_id) {
-    switch(class_id) {
-        case 1:
-            return "ELF32";
-        case 2:
-            return "ELF64";
-    }
-    return "N/A";
-}
-
-char* map_data_desc(unsigned char data_id) {
-    switch(data_id) {
-        case 1:
-            return "2's complement, little endian";
-        case 2:
-            return "2's complement, big endian";
-    }
-    return "N/A";
-}
-
-char* map_version_desc(unsigned char version_id) {
-    switch(version_id) {
-        case 1:
-            return "1 (current)";
-    }
-    return "N/A";
-}
-
-char* map_raw_bytes_desc(unsigned char* magic_bytes_arr, size_t n_bytes, char* out_str) {
-    for(int i = 0; i < n_bytes; i++) {
-        snprintf(&out_str[i*3], 3, "%02x", magic_bytes_arr[i]);
-        if(i < n_bytes - 1) {
-            snprintf(&out_str[i*3 + 2], 2, " ");
-        }
-    }
-    return out_str;
-}
-
-
-void print_key_value( gpointer key, gpointer value, gpointer user_data ) {
-    int real_key = GPOINTER_TO_INT( key );
-    char* real_value = (char*)value;
-
-    printf( "%d => %s\n", real_key, real_value );
-    return;
 }
 
 int run_app(int argc, char **argv) {
@@ -153,6 +74,8 @@ int run_app(int argc, char **argv) {
     char magic_bytes[48];
     char padding_bytes[21];
     char abi_version[4];
+    char elf_version[4];
+    char entry_point_address[20];
     
     if(args_have_errors(argc, argv) != 0) {
         printf(CLI_MESSAGE_USAGE_HINT);
@@ -173,7 +96,9 @@ int run_app(int argc, char **argv) {
     }
 
     snprintf(abi_version, 4, "%d", elf_header.e_ident[EI_ABIVERSION]);
-    snprintf( flags, 19, "0x%016x",  elf_header.e_flags);
+    snprintf(flags, 19, "0x%016x",  elf_header.e_flags);
+    snprintf(elf_version, 4, "0x%1x", elf_header.e_version);
+    snprintf(entry_point_address, 19, "%#lx", elf_header.e_entry);
 
     file_info.file_name = file_name;
     file_info.magic_bytes = map_raw_bytes_desc(elf_header.e_ident, 16, magic_bytes);;
@@ -185,11 +110,12 @@ int run_app(int argc, char **argv) {
     file_info.padding_bytes = map_raw_bytes_desc(&elf_header.e_ident[EI_PAD], 7, padding_bytes);
     file_info.object_file_type = map_object_file_type_desc(elf_header.e_type);
     file_info.flags_hex = flags;
+    file_info.machine = map_machine_desc(elf_header.e_machine);
+    file_info.elf_version = elf_version;
+    file_info.entry_point_address = entry_point_address;
 
     print_elf_info(&file_info);
     
     fclose(fd);
     return 0;
 }
-
-

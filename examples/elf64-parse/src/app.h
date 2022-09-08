@@ -25,6 +25,9 @@ typedef struct elf64_info_struct {
     char* abi_version; // 0
     char* padding_bytes; // space delimited 7 bytes that should all be 00
     char* object_file_type; // DYN (Position-Independent Executable file)
+    char* machine; // Advanced Micro Devices X86-64
+    char* elf_version; // 0x1
+    char* entry_point_address; // 0x1960
 
     char* arch;
     char* flags_hex;
